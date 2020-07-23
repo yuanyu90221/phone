@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
+	phonedb "github.com/yuanyu90221/phone/db"
 )
 
 func normalize(phone string) string {
@@ -31,7 +32,7 @@ func main() {
 	db, err := sql.Open("postgres", psqlInfo)
 	must(err)
 	defer db.Close()
-	must(createPhoneNumbersTable(db))
+	must(phonedb.Migrate("postgres", psqlInfo))
 	_, err = insertPhone(db, "1234567890")
 	must(err)
 	_, err = insertPhone(db, "123 456 7891")
@@ -137,16 +138,7 @@ func insertPhone(db *sql.DB, phone string) (int, error) {
 	}
 	return id, nil
 }
-func createPhoneNumbersTable(db *sql.DB) error {
-	statement := fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS  phone_numbers (
-			id SERIAL,
-			value VARCHAR(255)
-		)
-	`)
-	_, err := db.Exec(statement)
-	return err
-}
+
 func must(err error) {
 	if err != nil {
 		panic(err)
