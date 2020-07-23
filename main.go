@@ -59,10 +59,31 @@ func main() {
 		number := normalize(p.number)
 		if number != p.number {
 			fmt.Println("Updating or removing ...", number)
+			existing, err := findPhone(db, number)
+			must(err)
+			if existing != nil {
+				// delete this number
+				must(deletePhone(db, p.id))
+			} else {
+				// update this number
+				p.number = number
+				must(updatePhone(db, p))
+			}
 		} else {
 			fmt.Println("No changes required")
 		}
 	}
+}
+
+func deletePhone(db *sql.DB, id int) error {
+	statement := `DELETE FROM phone_numbers WHERE id=$1`
+	_, err := db.Exec(statement, id)
+	return err
+}
+func updatePhone(db *sql.DB, p phone) error {
+	statement := `UPDATE phone_numbers SET value=$2 WHERE id=$1`
+	_, err := db.Exec(statement, p.id, p.number)
+	return err
 }
 
 func allPhones(db *sql.DB) ([]phone, error) {
@@ -92,6 +113,20 @@ func getPhone(db *sql.DB, id int) (string, error) {
 		return "", nil
 	}
 	return number, nil
+}
+
+func findPhone(db *sql.DB, number string) (*phone, error) {
+	var p phone
+	row := db.QueryRow("SELECT * FROM phone_numbers WHERE value=$1", number)
+	err := row.Scan(&p.id, &p.number)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	return &p, nil
 }
 func insertPhone(db *sql.DB, phone string) (int, error) {
 	statement := `INSERT INTO phone_numbers(value) VALUES($1) RETURNING id`
