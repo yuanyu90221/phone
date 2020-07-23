@@ -22,17 +22,22 @@ func main() {
 	passwd := os.Getenv("POSTGRES_PASSWORD")
 	dbname := os.Getenv("POSTGRES_DB")
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=disable", host, port, user, passwd)
-	// db, err := sql.Open("postgres", psqlInfo)
-	// must(err)
-	// db.Close()
 	psqlInfo = fmt.Sprintf("%s dbname=%s", psqlInfo, dbname)
 	db, err := sql.Open("postgres", psqlInfo)
 	must(err)
 	defer db.Close()
-
-	must(db.Ping())
+	must(createPhoneNumbersTable(db))
 }
-
+func createPhoneNumbersTable(db *sql.DB) error {
+	statement := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS  phone_numbers (
+			id SERIAL,
+			value VARCHAR(255)
+		)
+	`)
+	_, err := db.Exec(statement)
+	return err
+}
 func must(err error) {
 	if err != nil {
 		panic(err)
